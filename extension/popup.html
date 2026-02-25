@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeWeb</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header>
+    <span class="logo">🛡️</span>
+    <div>
+      <h1>SafeWeb</h1>
+      <small>Parental Control</small>
+    </div>
+  </header>
+
+  <div id="state-loading" class="state hidden">
+    <div class="spinner"></div>
+    <p>Scanning page…</p>
+  </div>
+
+  <div id="state-error" class="state hidden">
+    <p class="error-msg" id="error-text">Could not connect to backend.</p>
+    <p class="hint">Make sure the backend is running on <code>localhost:8000</code>.</p>
+  </div>
+
+  <div id="state-result" class="state hidden">
+    <div id="verdict-banner" class="verdict-banner">
+      <div class="score-ring">
+        <span id="score-value">0</span>
+        <small>/100</small>
+      </div>
+      <div>
+        <div class="verdict-label" id="verdict-label">SAFE</div>
+        <div class="verdict-sub" id="verdict-sub">No threats detected</div>
+      </div>
+    </div>
+
+    <section class="reasons-section">
+      <h2>Risk signals</h2>
+      <ul id="reasons-list"></ul>
+    </section>
+
+    <section class="feedback-section">
+      <p class="feedback-prompt">Was this correct?</p>
+      <div class="feedback-buttons">
+        <button id="btn-safe" class="btn btn-safe">✔ Mark Safe</button>
+        <button id="btn-scam" class="btn btn-scam">⚑ Report Scam</button>
+      </div>
+      <p id="feedback-status" class="feedback-status hidden"></p>
+    </section>
+  </div>
+
+  <div id="state-idle" class="state hidden">
+    <div class="idle-icon">🛡️</div>
+    <p>Navigate to a page to scan it.</p>
+  </div>
+
+  <footer>
+    <a id="settings-link" href="#">⚙ Parent Settings</a>
+  </footer>
+
+  <div id="settings-panel" class="settings-panel hidden">
+    <div class="setting-row">
+      <label>Backend URL</label>
+      <input type="text" id="backend-url-input" placeholder="http://localhost:8000"/>
+    </div>
+    <div class="setting-row">
+      <label>Parent Password</label>
+      <input type="password" id="parent-password-input" placeholder="Set a password for overrides"/>
+    </div>
+    <button id="save-settings" class="btn btn-save">Save Settings</button>
+    <p id="settings-status" class="hidden success-msg">✔ Saved!</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

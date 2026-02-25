@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Қорған AI — Сайт бұғатталды</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0a0a0f;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(220, 30, 30, 0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(180, 0, 0, 0.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .rings {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(220, 30, 30, 0.15);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: pulse-ring 3s ease-out infinite;
+    }
+    .ring:nth-child(1) { width: 300px; height: 300px; animation-delay: 0s; }
+    .ring:nth-child(2) { width: 500px; height: 500px; animation-delay: 0.8s; }
+    .ring:nth-child(3) { width: 700px; height: 700px; animation-delay: 1.6s; }
+    @keyframes pulse-ring {
+      0% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(15, 12, 18, 0.94);
+      border: 1px solid rgba(220, 30, 30, 0.3);
+      border-radius: 24px;
+      padding: 52px 48px 44px;
+      max-width: 580px;
+      width: 92%;
+      text-align: center;
+      box-shadow:
+        0 0 0 1px rgba(220, 30, 30, 0.08),
+        0 32px 80px rgba(0, 0, 0, 0.65),
+        0 0 60px rgba(220, 30, 30, 0.08);
+      animation: card-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes card-in {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Shield */
+    .shield-wrap {
+      width: 88px; height: 88px;
+      margin: 0 auto 24px;
+      position: relative;
+    }
+    .shield-glow {
+      width: 88px; height: 88px;
+      background: radial-gradient(circle, rgba(220,30,30,0.22) 0%, transparent 70%);
+      border-radius: 50%;
+      position: absolute; inset: 0;
+      animation: shield-pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes shield-pulse {
+      0%,100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.18); opacity: 1; }
+    }
+    .shield-svg { width: 88px; height: 88px; position: relative; z-index: 1; }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(220, 30, 30, 0.12);
+      border: 1px solid rgba(220, 30, 30, 0.3);
+      color: #ff6b6b;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      padding: 5px 13px;
+      border-radius: 100px;
+      margin-bottom: 18px;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: #ff4444;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      letter-spacing: -0.4px;
+    }
+    h1 em { color: #ff4444; font-style: normal; }
+
+    .subtitle {
+      color: #777;
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 28px;
+    }
+
+    /* Category explanation box */
+    .explain-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: rgba(220, 30, 30, 0.07);
+      border: 1px solid rgba(220, 30, 30, 0.18);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .explain-icon {
+      font-size: 28px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .explain-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ff7070;
+      margin-bottom: 5px;
+    }
+    .explain-text {
+      font-size: 13px;
+      color: #999;
+      line-height: 1.6;
+    }
+
+    /* Domain row */
+    .domain-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 24px;
+    }
+    .domain-label {
+      font-size: 11px;
+      color: #555;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .domain-value {
+      font-size: 13px;
+      color: #bbb;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Buttons */
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #dc1e1e;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(220,30,30,0.35);
+    }
+    .btn-primary:hover {
+      background: #f02020;
+      box-shadow: 0 6px 28px rgba(220,30,30,0.5);
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: #777;
+      font-size: 13px;
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.09);
+      color: #bbb;
+      transform: translateY(-1px);
+    }
+
+    /* Whitelist confirm */
+    #whitelist-confirm {
+      display: none;
+      margin-top: 12px;
+      background: rgba(255,200,0,0.07);
+      border: 1px solid rgba(255,200,0,0.2);
+      border-radius: 10px;
+      padding: 13px 16px;
+      color: #ffd060;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .confirm-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-confirm-yes {
+      flex: 1; padding: 9px 14px; border-radius: 8px;
+      background: rgba(220,30,30,0.12);
+      border: 1px solid rgba(220,30,30,0.25);
+      color: #ff7070; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-confirm-yes:hover { background: rgba(220,30,30,0.22); }
+    .btn-confirm-no {
+      flex: 1; padding: 9px 14px; border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: #666; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn-confirm-no:hover { background: rgba(255,255,255,0.1); color: #aaa; }
+
+    .footer {
+      margin-top: 22px;
+      font-size: 11px;
+      color: #383838;
+    }
+  </style>
+</head>
+<body>
+
+<div class="rings">
+  <div class="ring"></div>
+  <div class="ring"></div>
+  <div class="ring"></div>
+</div>
+
+<div class="card">
+
+  <div class="shield-wrap">
+    <div class="shield-glow"></div>
+    <svg class="shield-svg" viewBox="0 0 88 88" fill="none">
+      <path d="M44 7L13 20V42C13 59 26 74.5 44 81C62 74.5 75 59 75 42V20L44 7Z"
+            fill="rgba(220,30,30,0.14)" stroke="#dc1e1e" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="32" y1="32" x2="56" y2="56" stroke="#ff4444" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="56" y1="32" x2="32" y2="56" stroke="#ff4444" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div class="badge">
+    <span class="badge-dot"></span>
+    Қорған AI — Кіру бұғатталды
+  </div>
+
+  <h1>Бұл сайт <em>қауіпті</em></h1>
+  <p class="subtitle">
+    Қорған AI осы сайтты зиянды деп анықтады және<br>сіздің қауіпсіздігіңіз үшін кіруді бұғаттады.
+  </p>
+
+  <!-- Dynamic explanation box — filled by JS -->
+  <div class="explain-box" id="explain-box">
+    <div class="explain-icon" id="explain-icon">⚠️</div>
+    <div>
+      <div class="explain-title" id="explain-title">Белгісіз қауіп</div>
+      <div class="explain-text" id="explain-text">Бұл сайт қауіпті болуы мүмкін.</div>
+    </div>
+  </div>
+
+  <div class="domain-row">
+    <span class="domain-label">Сайт:</span>
+    <span class="domain-value" id="blocked-url">—</span>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="goBack()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Қауіпсіз бетке оралу
+    </button>
+    <button class="btn btn-ghost" onclick="showWhitelistConfirm()">
+      Мен бұл сайтқа сенемін — рұқсат беру
+    </button>
+  </div>
+
+  <div id="whitelist-confirm">
+    ⚠️ Сенімдісіз бе? Бұл сайт ақ тізімге қосылады және енді бұғатталмайды.
+    <div class="confirm-btns">
+      <button class="btn-confirm-yes" onclick="confirmWhitelist()">Иә, рұқсат беру</button>
+      <button class="btn-confirm-no" onclick="cancelWhitelist()">Жоқ, артқа</button>
+    </div>
+  </div>
+
+  <p class="footer">Қорған AI · Google Gemini негізінде жұмыс істейді</p>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const blockedUrl = params.get("url") || "";
+  const category   = (params.get("category") || "unknown").toLowerCase();
+
+  // Show the blocked URL
+  document.getElementById("blocked-url").textContent = blockedUrl || "Белгісіз сайт";
+
+  // Category explanations in Kazakh
+  const categories = {
+    "gambling": {
+      icon: "🎰",
+      title: "Құмар ойын сайты",
+      text: "Бұл сайт онлайн казино, спорттық бәс тігу немесе лотерея қызметін ұсынады. Мұндай сайттар қаржылық шығынға және тәуелділікке алып келуі мүмкін."
+    },
+    "adult": {
+      icon: "🔞",
+      title: "Ересектерге арналған мазмұн",
+      text: "Бұл сайтта 18+ немесе порнографиялық мазмұн бар. Бұл сайтқа кіру ұсынылмайды."
+    },
+    "scam": {
+      icon: "🚨",
+      title: "Алаяқтық / Фишинг сайты",
+      text: "Бұл сайт жалған немесе алаяқтық мақсатта жасалған. Жеке деректеріңізді немесе банк ақпаратыңызды енгізбеңіз — бұл сіздің ақшаңызды ұрлауға әрекет болуы мүмкін."
+    },
+    "piracy": {
+      icon: "🏴‍☠️",
+      title: "Заңсыз мазмұн / Пираттық",
+      text: "Бұл сайтта лицензиясыз немесе заңсыз жүктелетін файлдар, бағдарламалар немесе медиа мазмұн таратылады."
+    },
+    "malware": {
+      icon: "🦠",
+      title: "Вирус / Зиянды бағдарлама",
+      text: "Бұл сайт вирус, шпиондық бағдарлама немесе басқа зиянды бағдарламаларды таратуы мүмкін. Компьютеріңізге зиян тигізбеу үшін кіру бұғатталды."
+    },
+    "keyword-match": {
+      icon: "⛔",
+      title: "Бұғатталған кілт сөз анықталды",
+      text: "Сайттың мекенжайында немесе атауында бұғатталған санатқа жататын сөздер табылды. Сайт алдын ала тексерусіз бұғатталды."
+    },
+    "suspicious-tld": {
+      icon: "🔍",
+      title: "Күдікті домен",
+      text: "Бұл сайттың домен атауы (.xyz, .tk, .ml және т.б.) жиі алаяқтық немесе зиянды сайттарда қолданылады. Сақ болыңыз."
+    },
+    "other": {
+      icon: "⚠️",
+      title: "Қауіпті мазмұн",
+      text: "Қорған AI бұл сайтты қауіпті деп бағалады. Жеке деректеріңізді енгізбей, сайттан шығуды ұсынамыз."
+    },
+    "unknown": {
+      icon: "⚠️",
+      title: "Қауіпті мазмұн",
+      text: "Қорған AI бұл сайтты қауіпті деп бағалады. Жеке деректеріңізді енгізбей, сайттан шығуды ұсынамыз."
+    }
+  };
+
+  // Match the category (handle partial matches like "keyword-match" → "keyword")
+  const info = categories[category]
+    || Object.entries(categories).find(([k]) => category.includes(k))?.[1]
+    || categories["unknown"];
+
+  document.getElementById("explain-icon").textContent = info.icon;
+  document.getElementById("explain-title").textContent = info.title;
+  document.getElementById("explain-text").textContent  = info.text;
+
+  function goBack() {
+    if (history.length > 1) history.back();
+    else window.location.href = "https://www.google.com";
+  }
+
+  function showWhitelistConfirm() {
+    document.getElementById("whitelist-confirm").style.display = "block";
+  }
+  function cancelWhitelist() {
+    document.getElementById("whitelist-confirm").style.display = "none";
+  }
+  function confirmWhitelist() {
+    let hostname = "";
+    try { hostname = new URL(blockedUrl).hostname.replace(/^www\./, ""); } catch {}
+    if (!hostname) return;
+    chrome.runtime.sendMessage({ type: "ADD_WHITELIST", hostname }, () => {
+      window.location.href = blockedUrl;
+    });
+  }
+</script>
+</body>
+</html>
