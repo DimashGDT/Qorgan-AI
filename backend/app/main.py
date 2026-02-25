@@ -1,5 +1,5 @@
 """
-Scam Detector Backend – FastAPI application.
+Scam Detector Backend – FastAPI application with ML integration.
 """
 from __future__ import annotations
 import logging
@@ -17,12 +17,38 @@ from app.schemas import (
 )
 from app.scoring import (
     apply_rules, score_to_verdict,
-    get_model, MODEL_VERSION,
     extract_from_url, merge_features,
 )
 from app.storage import init_db, get_db, Scan, Feedback
 from app.security import check_rate_limit
 from app.utils import make_trace_id, url_hash, extract_domain, truncate_features_json
+
+# === ML модель ===
+from transformers import pipeline
+
+ML_PIPELINE = pipeline(
+    "zero-shot-classification",
+    model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
+)
+CATEGORIES = [
+    "illegal drugs", "online casino", "pyramid scheme", "financial fraud", "safe website"
+]
+
+def ml_predict(features: dict) -> float:
+    """
+    Возвращает ML score 0..1
+    """
+    text = " ".join([
+        features.get("title", ""),
+        features.get("meta_description", ""),
+        features.get("body_snippet", "")
+    ])
+    result = ML_PIPELINE(text, CATEGORIES)
+    max_score = 0
+    for label, score in zip(result["labels"], result["scores"]):
+        if label != "safe website" and score > max_score:
+            max_score = score
+    return float(max_score)
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -32,23 +58,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
-# Replace the value below with your real extension origin, e.g.:
-#   "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
-# See backend/README.md for instructions.
 ALLOWED_ORIGINS: list[str] = os.getenv(
     "ALLOWED_ORIGINS",
     "chrome-extension://REPLACE_WITH_YOUR_EXTENSION_ID",
 ).split(",")
 
-
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    get_model()  # warm up model (no-op for stub)
-    logger.info("Scam Detector backend started | model_version=%s", MODEL_VERSION)
+    logger.info("Scam Detector backend started | ML model loaded")
     yield
-
 
 app = FastAPI(
     title="Scam Detector API",
@@ -64,12 +84,10 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 @app.get("/v1/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok", model_version=MODEL_VERSION)
-
+    return HealthResponse(status="ok", model_version="ML integrated")
 
 @app.post(
     "/v1/scan",
@@ -88,15 +106,20 @@ async def scan(
     url_feats = extract_from_url(payload.url)
     features = merge_features(url_feats, payload.features)
 
-    # Scoring: rules + ML stub combined (ML returns 0 for now)
+    # Rule-based scoring
     rules_score, reasons = apply_rules(features)
-    ml_score = get_model().predict(features)  # 0..1 float
 
-    # Blend: 80% rules + 20% ML (when ML is active)
+    # ML scoring
+    ml_score = ml_predict(features)  # 0..1 float
+
+    # Blend: 80% rules + 20% ML
     blended = int(rules_score * 0.8 + ml_score * 100 * 0.2)
     blended = max(0, min(100, blended))
-
     verdict = score_to_verdict(blended)
+
+    # ML reason
+    if ml_score > 0.5:
+        reasons.append("ML: classified as risky page")
 
     if not reasons:
         reasons = ["No significant risk signals detected"]
@@ -108,24 +131,24 @@ async def scan(
         domain=extract_domain(payload.url),
         score=blended,
         verdict=verdict,
-        model_version=MODEL_VERSION,
+        model_version="ML integrated",
         features_json=truncate_features_json(features),
     )
     db.add(scan_row)
     await db.commit()
 
     logger.info(
-        "trace_id=%s  verdict=%s  score=%d  domain=%s",
-        trace_id, verdict, blended, scan_row.domain,
+        "trace_id=%s  verdict=%s  score=%d  domain=%s  ml_score=%.2f",
+        trace_id, verdict, blended, scan_row.domain, ml_score,
     )
+
     return ScanResponse(
         trace_id=trace_id,
         verdict=verdict,
         risk_score=blended,
         reasons=reasons,
-        model_version=MODEL_VERSION,
+        model_version="ML integrated",
     )
-
 
 @app.post("/v1/feedback", response_model=FeedbackResponse)
 async def feedback(
