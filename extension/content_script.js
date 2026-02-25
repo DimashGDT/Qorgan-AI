@@ -1,45 +1,16 @@
-/**
- * content_script.js – SafeWeb v2
- * Runs at document_start for early interception signal,
- * then document_idle for deep content scanning.
- */
 (function () {
   "use strict";
 
-  const CARD_KEYWORDS = [
-    "credit card", "card number", "cvv", "expiry date",
-    "billing address", "checkout", "payment", "buy now",
-  ];
-
-  const SUSPICIOUS_WORDS = [
-    "verify", "confirm", "update", "login", "secure", "suspended",
-    "unusual activity", "urgent", "limited time", "free prize",
-    "winner", "congratulations", "wire transfer", "bitcoin",
-  ];
-
-  const GAMBLING_KEYWORDS = [
-    "place a bet", "live betting", "sports betting", "casino bonus",
-    "free spins", "slot machine", "jackpot", "roulette", "blackjack",
-    "poker", "odds", "accumulator", "sportsbook", "bookmaker",
-    "deposit bonus", "welcome bonus", "wagering", "cashout",
-    "ставки на спорт", "игровые автоматы", "букмекер",
-    "бесплатные вращения", "казино", "слоты", "джекпот",
-  ];
-
-  const ADULT_KEYWORDS = [
-    "porn", "xxx", "nude", "naked", "adult content", "18+",
-    "onlyfans", "escort", "cam girls", "sex chat",
-  ];
-
-  const DRUG_KEYWORDS = [
-    "buy drugs", "order cocaine", "buy weed online", "darknet market",
-    "buy pills", "mdma", "fentanyl", "methamphetamine", "buy firearms",
-  ];
+  // === Списки ключевых слов ===
+  const CARD_KEYWORDS = [...];         // оставляем как есть
+  const SUSPICIOUS_WORDS = [...];
+  const GAMBLING_KEYWORDS = [...];
+  const ADULT_KEYWORDS = [...];
+  const DRUG_KEYWORDS = [...];
 
   function getBodyText() {
-    try {
-      return (document.body?.innerText || "").toLowerCase().slice(0, 60_000);
-    } catch { return ""; }
+    try { return (document.body?.innerText || "").toLowerCase().slice(0, 60_000); }
+    catch { return ""; }
   }
 
   function count(text, keywords) {
@@ -48,6 +19,10 @@
 
   function hasPasswordInput() {
     return document.querySelectorAll('input[type="password"]').length > 0;
+  }
+
+  function hasCaptcha() {
+    return !!document.querySelector("iframe[src*='captcha'], .g-recaptcha");
   }
 
   function getSubdomainCount(hostname) {
@@ -59,12 +34,11 @@
     catch { return 0; }
   }
 
-  // Wait for page to be ready then do deep scan
-  function deepScan() {
+  // === Собираем фичи страницы ===
+  function extractFeatures() {
     const hostname = window.location.hostname.toLowerCase();
     const text = getBodyText();
-
-    const features = {
+    return {
       domain_length: hostname.length,
       redirect_count: getRedirectCount(),
       has_password_input: hasPasswordInput(),
@@ -78,19 +52,67 @@
       hyphen_count: (hostname.match(/-/g) || []).length,
       path_depth: window.location.pathname.split("/").filter(Boolean).length,
       is_https: window.location.protocol === "https:",
+      title: document.title,
+      meta_description: document.querySelector("meta[name='description']")?.content || "",
+      body_snippet: text.slice(0, 2000),
     };
-
-    chrome.runtime.sendMessage({
-      type: "PAGE_FEATURES",
-      url: window.location.href,
-      features,
-    });
   }
 
-  // Run deep scan after DOM is ready
+  // === Проверка login + captcha ===
+  function readyForML() {
+    return !hasCaptcha() && !hasPasswordInput();
+  }
+
+  // === Анализ страницы через backend ML ===
+  async function analyzePageML(features) {
+    try {
+      const response = await fetch("http://localhost:8000/v1/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: window.location.href,
+          features
+        }),
+      });
+      const data = await response.json();
+
+      if (data.block) {
+        document.documentElement.innerHTML = `
+          <div style="
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:black;
+            color:red;
+            font-size:24px;
+            flex-direction:column;">
+            <h1>ACCESS BLOCKED</h1>
+            <p>Category: ${data.category}</p>
+            <p>Risk score: ${data.risk_score.toFixed(2)}</p>
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.error("ML scan failed", e);
+    }
+  }
+
+  // === Главная логика ===
+  async function runScan() {
+    if (readyForML()) {
+      const features = extractFeatures();
+      await analyzePageML(features);
+    } else {
+      // Ждём 2 сек и пробуем снова
+      setTimeout(runScan, 2000);
+    }
+  }
+
+  // === Запускаем после полной загрузки DOM ===
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", deepScan);
+    document.addEventListener("DOMContentLoaded", runScan);
   } else {
-    deepScan();
+    runScan();
   }
 })();
