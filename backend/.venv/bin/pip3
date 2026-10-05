@@ -1,4 +1,4 @@
-#!/Users/umarkhanov/Desktop/scam-detector/backend/.venv/bin/python3.12
+#!/media/dimash/899e813b-68c4-4c50-a9c2-34841154cb34/Qorgan-AI/backend/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
